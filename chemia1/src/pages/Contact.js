@@ -31,6 +31,7 @@ const Contact = () => {
         <h1>Спасибо! Ваше сообщение отправлено. Мы свяжемся с вами в ближайшее время.</h1>
       ) : (
         <form className="contact-form" onSubmit={handleSubmit}>
+          <h1>Связь с нами</h1>
           <label>
             Ваше имя
             <input

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './Checkout.css';
 
-const Checkout = ({ cart }) => {
+const Checkout = ({ cart, clearCart }) => {
   const [formData, setFormData] = useState({
     name: '',
     city: '',
@@ -20,20 +20,87 @@ const Checkout = ({ cart }) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (cart.length === 0) {
       alert('Нельзя оформить заказ — корзина пуста!');
       return;
     }
-    const randomOrderNumber = Math.floor(Math.random() * (30000 - 10000 + 1)) + 10000;
-    setOrderNumber(randomOrderNumber);
 
+    const randomOrderNumber = Math.floor(Math.random() * (90000 - 10000 + 1)) + 10000;
     const today = new Date();
     const formattedDate = today.toLocaleDateString('ru-RU');
-    setOrderDate(formattedDate);
+    const totalAmount = cart
+      .reduce(
+        (sum, item) =>
+          sum + parseFloat(item.price.replace(/[^\d.]/g, '')) * item.quantity,
+        0
+      )
+      .toFixed(2);
 
-    setOrderConfirmed(true);
+    const message = `
+<b>Новый заказ</b>
+<b>Номер заказа:</b> ${randomOrderNumber}
+<b>Дата:</b> ${formattedDate}
+<b>Итого:</b> ${totalAmount} ₴
+<b>Способ оплаты:</b> Прямой банковский перевод
+
+<b>Информация о заказе:</b>
+${cart
+  .map(
+    (item) =>
+      `- ${item.name} — ${item.quantity} × ${parseFloat(
+        item.price.replace(/[^\d.]/g, '')
+      ).toFixed(2)} ₴`
+  )
+  .join('\n')}
+
+<b>Платёжный адрес:</b>
+Имя: ${formData.name}
+Телефон: ${formData.phone}
+Email: ${formData.email}
+${formData.telegram ? `Телеграм: ${formData.telegram}` : ''}
+
+<b>Адрес доставки:</b>
+Город: ${formData.city}
+Отделение Новой почты: ${formData.novaPoshtaBranch}
+`;
+
+    // Твой токен и чат ID
+    const TELEGRAM_BOT_TOKEN = '7872409790:AAH1yejeWHfy7XLXFKegPJ90cm7c9i_fKws';
+    const CHAT_ID = '@chemia_chemia';
+
+    try {
+      const response = await fetch(
+        `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            chat_id: CHAT_ID,
+            text: message,
+            parse_mode: 'HTML',
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Ошибка при отправке сообщения');
+      }
+
+      // Очистка корзины после успешной отправки
+      clearCart();
+
+      setOrderNumber(randomOrderNumber);
+      setOrderDate(formattedDate);
+      setOrderConfirmed(true);
+    } catch (error) {
+      console.error('Ошибка отправки в Telegram:', error);
+      alert('Ошибка при отправке заказа. Попробуйте позже.');
+    }
   };
 
   const total = cart.reduce(
@@ -45,17 +112,29 @@ const Checkout = ({ cart }) => {
     return (
       <div className="checkout-container">
         <h1>Ваш заказ принят. Благодарим вас.</h1>
-        <p><strong>Номер заказа:</strong> {orderNumber}</p>
-        <p><strong>Дата:</strong> {orderDate}</p>
-        <p><strong>Итого:</strong> {total.toFixed(2)} ₴</p>
-        <p><strong>Способ оплаты:</strong> Прямой банковский перевод</p>
-        <p>Свяжитесь с консультантом для уточнения деталей оплаты и доставки. Спасибо, что выбрали наш сервис.</p>
+        <p>
+          <strong>Номер заказа:</strong> {orderNumber}
+        </p>
+        <p>
+          <strong>Дата:</strong> {orderDate}
+        </p>
+        <p>
+          <strong>Итого:</strong> {total.toFixed(2)} ₴
+        </p>
+        <p>
+          <strong>Способ оплаты:</strong> Прямой банковский перевод
+        </p>
+        <p>
+          Свяжитесь с консультантом для уточнения деталей оплаты и доставки.
+          Спасибо, что выбрали наш сервис.
+        </p>
 
         <h2>Информация о заказе</h2>
         <ul className="order-list">
           {cart.map((item, idx) => (
             <li key={idx}>
-              {item.name} — {item.quantity} × {parseFloat(item.price.replace(/[^\d.]/g, '')).toFixed(2)} ₴
+              {item.name} — {item.quantity} ×{' '}
+              {parseFloat(item.price.replace(/[^\d.]/g, '')).toFixed(2)} ₴
             </li>
           ))}
         </ul>
@@ -156,7 +235,8 @@ const Checkout = ({ cart }) => {
           <ul className="order-list">
             {cart.map((item, idx) => (
               <li key={idx}>
-                {item.name} — {item.quantity} × {parseFloat(item.price.replace(/[^\d.]/g, '')).toFixed(2)} ₴
+                {item.name} — {item.quantity} ×{' '}
+                {parseFloat(item.price.replace(/[^\d.]/g, '')).toFixed(2)} ₴
               </li>
             ))}
           </ul>

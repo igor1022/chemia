@@ -5,6 +5,7 @@ import './Showcase.css';
 const Showcase = ({ addToCart }) => {
   const [addedItems, setAddedItems] = useState({});
   const [sortOrder, setSortOrder] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const handleAddToCart = (product) => {
     addToCart(product);
@@ -14,20 +15,21 @@ const Showcase = ({ addToCart }) => {
     }, 1000);
   };
 
-  // Функция для преобразования строки в число (удаляет "грн.", пробелы, запятые и приводит к числу)
   const parsePrice = (priceStr) => {
-    return parseFloat(
-      priceStr.replace(/[^\d.]/g, '').replace(',', '') // Удаляем всё, кроме цифр и точки
-    );
+    return parseFloat(priceStr.replace(/[^\d.]/g, '').replace(',', ''));
   };
 
   const sortedProducts = () => {
+    let filtered = products.filter((product) =>
+      product.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     if (sortOrder === 'asc') {
-      return [...products].sort((a, b) => parsePrice(a.price) - parsePrice(b.price));
+      return filtered.sort((a, b) => parsePrice(a.price) - parsePrice(b.price));
     } else if (sortOrder === 'desc') {
-      return [...products].sort((a, b) => parsePrice(b.price) - parsePrice(a.price));
+      return filtered.sort((a, b) => parsePrice(b.price) - parsePrice(a.price));
     } else {
-      return products;
+      return filtered;
     }
   };
 
@@ -35,6 +37,16 @@ const Showcase = ({ addToCart }) => {
     <div className="showcase">
       <h1 className="text-xl font-bold mb-4">Товары</h1>
 
+      {/* Поиск */}
+      <input
+        type="text"
+        placeholder="Поиск по названию..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="search-input"
+      />
+
+      {/* Сортировка */}
       <div className="sort-buttons">
         <button
           onClick={() => setSortOrder(null)}
@@ -56,6 +68,7 @@ const Showcase = ({ addToCart }) => {
         </button>
       </div>
 
+      {/* Список товаров */}
       <div className="products">
         {sortedProducts().map((product) => (
           <div key={product.name} className="product">
